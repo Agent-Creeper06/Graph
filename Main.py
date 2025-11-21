@@ -19,7 +19,7 @@ def parse_args(): #Считываение аргументов с командн
 
         i += 1
 
-    #Значения по умолчанию
+    # Значения по умолчанию
     if "package" not in opts:
         print("Ошибка: не задан --package")
         sys.exit(2)
@@ -34,13 +34,36 @@ def parse_args(): #Считываение аргументов с командн
     return opts
 
 
-def main(): #Запуск функции
+def read_test_repo(path): #Чтение файла
+    graph = {}
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            if ":" not in line:
+                continue
+            pkg, deps = line.split(":", 1)
+            pkg = pkg.strip()
+            deps = deps.strip().split()
+
+            graph[pkg] = deps
+    return graph
+
+
+def main():
     #Получение параметров
     opts = parse_args()
+
     #Вывод параметров
-    print("Параметры (ключ=значение):")
-    for k, v in opts.items():
-        print(f"{k}={v}")
+    graph = read_test_repo(opts["repo"])
+    pkg = opts["package"]
+
+    #Вывод зависимостей
+    print(f"Прямые зависимости пакета {pkg}:")
+    deps = graph.get(pkg, []) #Получение зависимостей
+    if not deps:
+        print("(нет прямых зависимостей)")
+    else:
+        for d in deps:
+            print(d)
 
 if __name__ == "__main__":
     main()

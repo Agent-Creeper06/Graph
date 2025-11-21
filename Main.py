@@ -1,4 +1,5 @@
 import sys
+from collections import deque
 
 def parse_args(): #Считываение аргументов с командной строки
     args = sys.argv[1:]
@@ -33,7 +34,6 @@ def parse_args(): #Считываение аргументов с командн
 
     return opts
 
-
 def read_test_repo(path): #Чтение файла
     graph = {}
     with open(path, "r", encoding="utf-8") as f:
@@ -43,27 +43,51 @@ def read_test_repo(path): #Чтение файла
             pkg, deps = line.split(":", 1)
             pkg = pkg.strip()
             deps = deps.strip().split()
-
             graph[pkg] = deps
     return graph
+
+def bfs_graph(graph, start, max_depth, substr): #Постройка графа зависимостей
+    visited = set() #Массив для записи посещённых
+    edges = []
+
+    q = deque() #Очередь для прохождения дерева в ширину
+    q.append((start, 0)) #Добавляем нулевой элемент
+    visited.add(start) #Добавляем этот элемент в посещённые
+
+    while q:
+        cur, depth = q.popleft()
+        if depth >= max_depth: #Проверка, что текущая глубина не превысила заданную
+            continue
+
+        for d in graph.get(cur, []):
+            if substr and substr in d: #Если пакет содержит подстроку, то он пропускается
+                continue
+
+            edges.append((cur, d))
+
+            if d not in visited: #Добавление посещённого пакета в список во избежании бесконечных циклов
+                visited.add(d)
+                q.append((d, depth + 1))
+
+    return edges
 
 
 def main():
     #Получение параметров
     opts = parse_args()
 
-    #Вывод параметров
+    #Чтение параметров
     graph = read_test_repo(opts["repo"])
-    pkg = opts["package"]
+    max_depth = int(opts["max-depth"])
+    substr = opts["filter"]
 
-    #Вывод зависимостей
-    print(f"Прямые зависимости пакета {pkg}:")
-    deps = graph.get(pkg, [])
-    if not deps:
-        print("(нет прямых зависимостей)")
-    else:
-        for d in deps:
-            print(d)
+    #Получение графа
+    result = bfs_graph(graph, opts["package"], max_depth, substr)
+
+    #Вывод графа
+    print(f"Ребра транзитивного графа (до глубины {max_depth}):")
+    for a, b in result:
+        print(f"{a} -> {b}")
 
 if __name__ == "__main__":
     main()

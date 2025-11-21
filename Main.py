@@ -71,6 +71,10 @@ def bfs_graph(graph, start, max_depth, substr): #Постройка графа �
 
     return edges
 
+def print_mermaid(edges): #Гравический вывод графиков
+    for a, b in edges:
+        print(f"{a} --> {b}")
+
 
 def main():
     #Получение параметров
@@ -80,14 +84,19 @@ def main():
     graph = read_test_repo(opts["repo"])
     max_depth = int(opts["max-depth"])
     substr = opts["filter"]
+    pkg = opts["package"]
 
-    #Получение графа
-    result = bfs_graph(graph, opts["package"], max_depth, substr)
+    #Вывод графа на экран
+    edges = bfs_graph(graph, pkg, max_depth, substr)
+    print_mermaid(edges)
 
-    #Вывод графа
-    print(f"Ребра транзитивного графа (до глубины {max_depth}):")
-    for a, b in result:
-        print(f"{a} -> {b}")
+    #Дополнительно сохраняем в файл
+    with open("graph.mmd", "w", encoding="utf-8") as f:
+        f.write("graph LR\n")
+        for a, b in edges:
+            f.write(f"{a} --> {b}\n")
+
+    print("Mermaid-граф записан в graph.mmd", file=sys.stderr)
 
 if __name__ == "__main__":
     main()

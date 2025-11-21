@@ -1,3 +1,4 @@
+# stage4.py
 import sys
 from collections import deque
 
@@ -71,9 +72,39 @@ def bfs_graph(graph, start, max_depth, substr): #Постройка графа �
 
     return edges
 
-def print_mermaid(edges): #Гравический вывод графиков
-    for a, b in edges:
-        print(f"{a} --> {b}")
+def reverse_graph(graph): #Граф обратных зависимостей
+    rev = {k: [] for k in graph} #Составление обратного графа
+    for a, deps in graph.items():
+        for b in deps:
+            rev.setdefault(b, []).append(a)
+    return rev
+
+
+def reverse_deps(graph, target, max_depth, substr): #Постройка графа зависимостей
+    rev = reverse_graph(graph)
+    visited = set() #Массив для записи посещённых
+
+    q = deque() #Очередь для прохождения дерева в ширину
+    q.append((target, 0)) #Добавляем нулевой элемент
+    visited.add(target) #Добавляем этот элемент в посещённые
+
+    depends = []
+
+    while q:
+        cur, depth = q.popleft()
+        if depth >= max_depth: #Проверка, что текущая глубина не превысила заданную
+            continue
+
+        for p in rev.get(cur, []):
+            if substr and substr in p: #Если пакет содержит подстроку, то он пропускается
+                continue
+
+            if p not in visited: #Добавление посещённого пакета в список во избежании бесконечных циклов
+                visited.add(p)
+                depends.append(p)
+                q.append((p, depth + 1))
+
+    return depends
 
 
 def main():
@@ -86,17 +117,16 @@ def main():
     substr = opts["filter"]
     pkg = opts["package"]
 
-    #Вывод графа на экран
-    edges = bfs_graph(graph, pkg, max_depth, substr)
-    print_mermaid(edges)
+    #Получение графа
+    deps = reverse_deps(graph, pkg, max_depth, substr)
 
-    #Дополнительно сохраняем в файл
-    with open("graph.mmd", "w", encoding="utf-8") as f:
-        f.write("graph LR\n")
-        for a, b in edges:
-            f.write(f"{a} --> {b}\n")
-
-    print("Mermaid-граф записан в graph.mmd", file=sys.stderr)
+    #Вывод графа
+    print(f"Обратные зависимости (кто зависит от {pkg}):")
+    if deps:
+        for d in deps:
+            print(d)
+    else:
+        print("(нет)")
 
 if __name__ == "__main__":
     main()
